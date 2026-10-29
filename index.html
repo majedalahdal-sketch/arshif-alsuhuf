@@ -1,0 +1,223 @@
+<!doctype html>
+<html dir="rtl" lang="ar">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>أرشيف الصحف</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🗞️</text></svg>">
+<style>
+@font-face{font-family:'ثمانية';src:url('/خطوط/sans-300.woff2')format('woff2');font-weight:300;font-display:swap}
+@font-face{font-family:'ثمانية';src:url('/خطوط/sans-400.woff2')format('woff2');font-weight:400;font-display:swap}
+@font-face{font-family:'ثمانية';src:url('/خطوط/sans-500.woff2')format('woff2');font-weight:500;font-display:swap}
+@font-face{font-family:'ثمانية';src:url('/خطوط/sans-700.woff2')format('woff2');font-weight:700;font-display:swap}
+@font-face{font-family:'ثمانية';src:url('/خطوط/sans-900.woff2')format('woff2');font-weight:900;font-display:swap}
+@font-face{font-family:'ثمانية نص';src:url('/خطوط/serif-text-400.woff2')format('woff2');font-weight:400;font-display:swap}
+@font-face{font-family:'ثمانية نص';src:url('/خطوط/serif-text-500.woff2')format('woff2');font-weight:500;font-display:swap}
+@font-face{font-family:'ثمانية نص';src:url('/خطوط/serif-text-700.woff2')format('woff2');font-weight:700;font-display:swap}
+@font-face{font-family:'ثمانية نص';src:url('/خطوط/serif-text-900.woff2')format('woff2');font-weight:900;font-display:swap}
+@font-face{font-family:'ثمانية عناوين';src:url('/خطوط/serif-display-400.woff2')format('woff2');font-weight:400;font-display:swap}
+@font-face{font-family:'ثمانية عناوين';src:url('/خطوط/serif-display-700.woff2')format('woff2');font-weight:700;font-display:swap}
+@font-face{font-family:'ثمانية عناوين';src:url('/خطوط/serif-display-900.woff2')format('woff2');font-weight:900;font-display:swap}
+
+:root{
+  --ورق:#f6f0e1; --حبر:#221c14; --حبر2:#6f6149; --خط:#d9ccae;
+  --أصفر:#ffdf70; --أصفر-حد:#dfb738;
+  --قرى:#175c43; --حجاز:#8a2f2b; --بطاقة:#fffdf6;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{background:var(--ورق);color:var(--حبر);font-family:'ثمانية',system-ui,sans-serif;min-height:100vh}
+.صفحة{max-width:880px;margin:0 auto;padding:26px 20px 90px}
+
+header{text-align:center;padding:6px 0 20px;border-bottom:4px double var(--حبر);margin-bottom:28px}
+.سطر-علوي{border-top:1.5px solid var(--حبر);border-bottom:1.5px solid var(--حبر);padding:5px 0;font-size:11.5px;font-weight:500;color:var(--حبر2);display:flex;justify-content:space-between;letter-spacing:.2px;margin-bottom:20px}
+h1{font-family:'ثمانية عناوين';font-weight:900;font-size:clamp(36px,7.5vw,60px);line-height:1.12}
+h1 .فاصل{color:var(--حبر2);font-weight:400;margin:0 10px}
+.تحت-العنوان{font-weight:400;color:var(--حبر2);font-size:14.5px;margin-top:12px;line-height:1.8}
+
+.بحث{position:relative}
+.صندوق{display:flex;align-items:center;gap:12px;background:var(--بطاقة);border:2px solid var(--حبر);border-radius:16px;padding:14px 18px;box-shadow:0 3px 0 var(--حبر)}
+.صندوق svg{flex:none;opacity:.55}
+#ق{flex:1;border:0;outline:0;background:transparent;font-family:'ثمانية نص';font-size:20px;font-weight:500;color:var(--حبر);min-width:0}
+#ق::placeholder{color:#ab9d80;font-weight:400}
+.مرشحات{display:flex;gap:8px;margin-top:14px;justify-content:center;flex-wrap:wrap}
+.رقاقة{font-family:'ثمانية';font-weight:500;font-size:13.5px;padding:6px 16px;border-radius:99px;border:1.5px solid var(--خط);background:transparent;color:var(--حبر2);cursor:pointer;transition:.15s}
+.رقاقة.فعال{background:var(--حبر);color:var(--ورق);border-color:var(--حبر)}
+
+.منسدلة{position:absolute;top:calc(100% + 10px);right:0;left:0;background:var(--بطاقة);border:1.5px solid var(--حبر);border-radius:14px;box-shadow:0 20px 46px rgba(34,28,20,.20);max-height:min(58vh,600px);overflow-y:auto;z-index:50;display:none}
+.منسدلة.ظاهرة{display:block}
+.عدّاد{position:sticky;top:0;background:var(--بطاقة);padding:10px 16px 9px;font-size:12.5px;color:var(--حبر2);border-bottom:1px solid var(--خط);font-weight:500;z-index:2}
+.نتيجة{padding:12px 16px 11px;border-bottom:1px solid #efe6d0;cursor:pointer}
+.نتيجة:last-child{border-bottom:0}
+.نتيجة:hover,.نتيجة.محدد{background:#f8f1de}
+.نتيجة .نص{font-family:'ثمانية نص';font-size:16.5px;line-height:1.95;word-break:break-word}
+mark{background:var(--أصفر);border-bottom:2px solid var(--أصفر-حد);border-radius:3px;padding:0 2px;font-weight:700;color:inherit}
+.بيانات{display:flex;align-items:center;gap:9px;margin-top:6px;font-size:12px;color:var(--حبر2);flex-wrap:wrap}
+.وسم{font-weight:700;font-size:10.5px;padding:2.5px 10px;border-radius:99px;color:#fff;letter-spacing:.2px}
+.وسم.قرى{background:var(--قرى)} .وسم.حجاز{background:var(--حجاز)}
+.لاشيء{padding:26px 16px;text-align:center;color:var(--حبر2);font-size:14px}
+
+.عارض{margin-top:28px;background:var(--بطاقة);border:1.5px solid var(--حبر);border-radius:16px;overflow:hidden;display:none}
+.عارض.ظاهر{display:block}
+.عارض-رأس{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:13px 18px;border-bottom:1.5px solid var(--خط);flex-wrap:wrap}
+.عارض-رأس .عنوان{font-weight:700;font-size:14.5px;display:flex;gap:9px;align-items:center;flex-wrap:wrap}
+.عارض-رأس .تاريخ{font-weight:400;color:var(--حبر2)}
+.أزرار{display:flex;gap:8px}
+.زر{font-family:'ثمانية';font-size:12.5px;font-weight:500;padding:7px 14px;border-radius:9px;border:1.5px solid var(--حبر);background:transparent;cursor:pointer;color:var(--حبر);text-decoration:none;transition:.15s}
+.زر:hover{background:var(--حبر);color:var(--ورق)}
+.عارض-صورة{background:#eae1ca;text-align:center;min-height:200px;display:flex;align-items:center;justify-content:center;padding:16px}
+.عارض-صورة img{max-width:100%;max-height:74vh;width:auto;height:auto;border:1px solid #cbbd9c;box-shadow:0 8px 26px rgba(0,0,0,.15);border-radius:4px;display:none}
+.دوّار{width:34px;height:34px;border:3.5px solid var(--خط);border-top-color:var(--حبر);border-radius:50%;animation:لف .8s linear infinite}
+@keyframes لف{to{transform:rotate(360deg)}}
+
+.أمثلة{margin-top:26px;text-align:center;color:var(--حبر2);font-size:13.5px;line-height:2.3}
+.أمثلة button{font-family:'ثمانية نص';font-size:14.5px;background:transparent;border:0;border-bottom:1px dashed #b3a17c;color:var(--حبر);cursor:pointer;margin:0 8px;padding:2px 1px}
+.أمثلة button:hover{border-bottom-style:solid}
+
+footer{text-align:center;margin-top:64px;color:var(--حبر2);font-size:12px;border-top:1px solid var(--خط);padding-top:16px;line-height:2}
+</style>
+</head>
+<body>
+<div class="صفحة">
+
+<header>
+  <div class="سطر-علوي"><span>34,208 صفحات مفهرسة</span><span>1343–1405هـ</span></div>
+  <h1>أرشيفُ الصُّحُف</h1>
+  <div class="تحت-العنوان">بحثٌ فوريّ في كل ما طُبع في صحيفتَي أم القرى (1343–1405هـ / 1924–1985م) وصوت الحجاز (1350–1359هـ / 1932–1941م)</div>
+</header>
+
+<div class="بحث">
+  <div class="صندوق">
+    <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.4-3.4"/></svg>
+    <input id="ق" type="text" autocomplete="off" spellcheck="false" placeholder="اكتب كلمةً أو عبارة… (ضع العبارة بين تنصيصٍ للتلاصق)">
+  </div>
+  <div class="مرشحات">
+    <button class="رقاقة فعال" data-p="">الكل</button>
+    <button class="رقاقة" data-p="أم القرى">أم القرى</button>
+    <button class="رقاقة" data-p="صوت الحجاز">صوت الحجاز</button>
+  </div>
+  <div class="منسدلة" id="منسدلة"></div>
+</div>
+
+<div class="أمثلة" id="أمثلة">
+  جرّب:
+  <button>الحج</button><button>جدة</button><button>"مجلس الشورى"</button><button>السيارات</button><button>الكهرباء</button><button>المدارس</button><button>الطائف</button>
+</div>
+
+<div class="عارض" id="عارض">
+  <div class="عارض-رأس">
+    <div class="عنوان" id="ع-عنوان"></div>
+    <div class="أزرار">
+      <button class="زر" id="ع-نسخ">نسخ الخبر ⧉</button>
+      <a class="زر" id="ع-صفحة" href="#" target="_blank">الصفحة كاملة ↗</a>
+      <button class="زر" id="ع-إغلاق">إغلاق ✕</button>
+    </div>
+  </div>
+  <div class="عارض-صورة"><div class="دوّار" id="ع-دوار" style="display:none"></div><img id="ع-صورة" alt="موضع النص في صفحة الجريدة"></div>
+</div>
+
+<footer>
+  فهرسٌ نصّيّ كامل (FTS5) لـ34,208 صفحات و7.18 مليون سطر بإحداثياته — قراءة ضوئية Apple Vision<br>
+  الحروف بخطّ <b>ثمانية</b> (font.thmanyah.com) — التظليل الأصفر يقع على السطر المطابق في صورة الأصل
+</footer>
+
+</div>
+<script>
+const $=id=>document.getElementById(id);
+const ق=$('ق'), منس=$('منسدلة'), عارض=$('عارض');
+const أرقام=s=>String(s).replace(/[٠-٩]/g,d=>'٠١٢٣٤٥٦٧٨٩'.indexOf(d)).replace(/[۰-۹]/g,d=>'۰۱۲۳۴۵۶۷۸۹'.indexOf(d));
+let مؤقت=null, تحكم=null, نتائج=[], محدد=-1, صحيفة='';
+
+function نظّف(s){const d=document.createElement('div');d.textContent=s;return d.innerHTML}
+function تاريخ(h){
+  let t=(h.greg||h.hijri||'').replace(/\s+/g,' ').trim();
+  if(t.length>34)t=t.slice(0,34)+'…';
+  return t||h.est||'—';
+}
+function صفوف(){
+  if(!نتائج.length){منس.innerHTML='<div class="لاشيء">لا نتائج — جرّب رسمًا آخر للكلمة (شاي/شاى/شاهي)</div>';return}
+  const رأس=`<div class="عدّاد">${أرقام(نتائج.length)} إصابة في ${أرقام(window.ص_معروضة)} صفحة${window.ص_كلية>window.ص_معروضة?` — من أصل ${أرقام(window.ص_كلية)} صفحة مطابقة (الأقدم أولًا)`:''}</div>`;
+  منس.innerHTML=رأس+نتائج.map((h,i)=>{
+    const نوع=h.paper==='أم القرى'?'قرى':'حجاز';
+    return `<div class="نتيجة${i===محدد?' محدد':''}" data-i="${i}">
+      <div class="نص">${أرقام(h.snippet)}</div>
+      <div class="بيانات"><span class="وسم ${نوع}">${h.paper}</span>
+        <span>العدد ${أرقام(h.issue)}</span><span>·</span><span>ص${أرقام(h.page)}</span><span>·</span><span>${أرقام(نظّف(تاريخ(h)))}</span></div>
+    </div>`}).join('');
+  منس.querySelectorAll('.نتيجة').forEach(el=>el.addEventListener('mousedown',e=>{e.preventDefault();اختر(+el.dataset.i)}));
+}
+function أظهر(){منس.classList.add('ظاهرة')}
+function أخفِ(){منس.classList.remove('ظاهرة');محدد=-1}
+
+async function ابحث(){
+  const نص=ق.value.trim();
+  if(نص.length<2){أخفِ();return}
+  if(تحكم)تحكم.abort(); تحكم=new AbortController();
+  منس.innerHTML='<div class="عدّاد">جارِ البحث…</div>'; أظهر();
+  try{
+    const r=await fetch(`/api/search?q=${encodeURIComponent(نص)}&paper=${encodeURIComponent(صحيفة)}`,{signal:تحكم.signal});
+    const j=await r.json();
+    نتائج=j.hits; window.ص_كلية=j.total_pages; window.ص_معروضة=j.shown_pages; محدد=-1;
+    صفوف(); أظهر();
+  }catch(e){if(e.name!=='AbortError')منس.innerHTML='<div class="لاشيء">تعذّر البحث</div>'}
+}
+
+let حالي=null;
+function اختر(i){
+  const h=نتائج[i]; if(!h)return;
+  حالي=h; محدد=i; صفوف(); أخفِ();
+  const نسخ=$('ع-نسخ'); نسخ.textContent='نسخ الخبر ⧉'; نسخ.disabled=false;
+  const نوع=h.paper==='أم القرى'?'قرى':'حجاز';
+  $('ع-عنوان').innerHTML=`<span class="وسم ${نوع}">${h.paper}</span> العدد ${أرقام(h.issue)} — الصفحة ${أرقام(h.page)} <span class="تاريخ">${أرقام(نظّف(تاريخ(h)))}</span>`;
+  $('ع-صفحة').href=`/api/page?key=${h.key}`;
+  const صورة=$('ع-صورة'), دوار=$('ع-دوار');
+  صورة.style.display='none'; دوار.style.display='block';
+  صورة.onload=()=>{دوار.style.display='none';صورة.style.display='inline-block'};
+  صورة.src=`/api/crop?key=${h.key}&i=${h.i}`;
+  عارض.classList.add('ظاهر');
+  عارض.scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+
+document.querySelector('.صندوق').addEventListener('click',()=>ق.focus());
+ق.addEventListener('input',()=>{clearTimeout(مؤقت);مؤقت=setTimeout(ابحث,280)});
+ق.addEventListener('focus',()=>{if(نتائج.length&&ق.value.trim().length>1){صفوف();أظهر()}});
+ق.addEventListener('keydown',e=>{
+  if(!منس.classList.contains('ظاهرة'))return;
+  const n=نتائج.length; if(!n)return;
+  if(e.key==='ArrowDown'){e.preventDefault();محدد=(محدد+1)%n;صفوف();تمرير()}
+  else if(e.key==='ArrowUp'){e.preventDefault();محدد=(محدد-1+n)%n;صفوف();تمرير()}
+  else if(e.key==='Enter'){e.preventDefault();اختر(محدد<0?0:محدد)}
+  else if(e.key==='Escape'){أخفِ()}
+});
+function تمرير(){const el=منس.querySelector('.نتيجة.محدد');if(el)el.scrollIntoView({block:'nearest'})}
+document.addEventListener('mousedown',e=>{if(!e.target.closest('.بحث'))أخفِ()});
+
+document.querySelectorAll('.رقاقة').forEach(b=>b.addEventListener('click',()=>{
+  document.querySelectorAll('.رقاقة').forEach(x=>x.classList.remove('فعال'));
+  b.classList.add('فعال'); صحيفة=b.dataset.p; if(ق.value.trim().length>1)ابحث();
+}));
+document.querySelectorAll('.أمثلة button').forEach(b=>b.addEventListener('click',()=>{
+  ق.value=b.textContent; ق.focus(); ابحث();
+}));
+$('ع-إغلاق').addEventListener('click',()=>عارض.classList.remove('ظاهر'));
+
+$('ع-نسخ').addEventListener('click',async()=>{
+  if(!حالي)return;
+  const زر=$('ع-نسخ');
+  try{
+    زر.disabled=true; زر.textContent='…';
+    const r=await fetch(`/api/text?key=${حالي.key}&i=${حالي.i}`);
+    const j=await r.json();
+    try{ await navigator.clipboard.writeText(j.copy) }
+    catch(_){ // متصفحات بلا clipboard API
+      const ta=document.createElement('textarea'); ta.value=j.copy;
+      document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove();
+    }
+    زر.textContent='نُسخ ✓';
+  }catch(e){ زر.textContent='تعذّر النسخ' }
+  زر.disabled=false;
+  setTimeout(()=>{زر.textContent='نسخ الخبر ⧉'},1800);
+});
+</script>
+</body>
+</html>
