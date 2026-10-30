@@ -13,8 +13,59 @@ from PIL import Image, ImageDraw
 
 SITE = os.path.dirname(os.path.abspath(__file__))
 BASE = os.path.dirname(SITE)                      # صحف الدارة
-DB   = os.path.join(BASE, 'فهرس_الصحف.db')
+DB   = os.environ.get('DB_PATH') or os.path.join(BASE, 'فهرس_الصحف.db')
 CACHE = os.path.join(SITE, 'كاش'); os.makedirs(CACHE, exist_ok=True)
+ORIG  = os.path.join(SITE, 'كاش_أصول'); os.makedirs(ORIG, exist_ok=True)
+
+# النشر: IMG_BASE قاعدةُ روابط صور الصفحات (مثل https://img.example.org) — تُقرأ من البيئة
+# لا من الكود؛ فإن ضُبطت حُوِّل /api/page إليها وجُلبت أصول القصاصات منها عند غيابها محليًّا.
+IMG_BASE = (os.environ.get('IMG_BASE') or '').rstrip('/')
+BIND = os.environ.get('BIND', '127.0.0.1')
+PORT = int(os.environ.get('PORT', '8017'))
+CROP_CACHE_MAX = 2_000_000_000     # سقف كاش القصاصات بالبايت
+ORIG_CACHE_MAX = 6_000_000_000     # سقف كاش الأصول المجلوبة من IMG_BASE
+
+def trim_dir(d, cap):
+    """يبقي حجم المجلد تحت السقف بحذف الأقدم وصولًا."""
+    fs = []
+    for n in os.listdir(d):
+        p = os.path.join(d, n)
+        try: st = os.stat(p)
+        except OSError: continue
+        fs.append((st.st_mtime, st.st_size, p))
+    total = sum(s for _, s, _ in fs)
+    for _, s, p in sorted(fs):
+        if total <= cap: break
+        try: os.remove(p); total -= s
+        except OSError: pass
+
+def page_image_path(rel):
+    """مسار صورة الصفحة: محليًّا تحت BASE (مع صدّ path traversal)، وإلا جلبٌ من IMG_BASE بكاش."""
+    rel = (rel or '').replace('\\', '/').lstrip('/')
+    root = os.path.realpath(BASE)
+    p = os.path.realpath(os.path.join(BASE, rel))
+    if p.startswith(root + os.sep) and os.path.exists(p):
+        return p
+    if not IMG_BASE:
+        return None
+    dst = os.path.join(ORIG, rel.replace('/', '_'))
+    if not os.path.exists(dst):
+        from urllib.request import urlopen
+        from urllib.parse import quote
+        tmp = dst + '.tmp'
+        try:
+            with urlopen(IMG_BASE + '/' + quote(rel), timeout=30) as r, open(tmp, 'wb') as f:
+                while True:
+                    b = r.read(1 << 20)
+                    if not b: break
+                    f.write(b)
+            os.replace(tmp, dst)
+        except Exception:
+            try: os.remove(tmp)
+            except OSError: pass
+            return None
+        trim_dir(ORIG, ORIG_CACHE_MAX)
+    return dst
 
 TASHKEEL = re.compile('[\u0610-\u061A\u064B-\u065F\u0670\u06D6-\u06ED\u0640]')
 def norm(s):
@@ -287,7 +338,9 @@ def make_crop(key, i):
     colL, colR = column_window(rows, tgt)
     x0 = max(0, colL - 0.012); x1 = min(1, colR + 0.012)
     y0 = max(0, ty - 0.12);    y1 = min(1, ty + th + 0.12)
-    im = Image.open(os.path.join(BASE, img[0])).convert('RGB')
+    ip = page_image_path(img[0])
+    if not ip: return None
+    im = Image.open(ip).convert('RGB')
     W, H = im.size
     cr = im.crop((int(x0 * W), int(y0 * H), int(x1 * W), int(y1 * H)))
     # قصّ الحواف البيضاء قبل التظليل
@@ -309,6 +362,7 @@ def make_crop(key, i):
     sc = 2.0 if cr.width < 800 else (1.6 if cr.width < 1300 else 1.2)
     cr = cr.resize((int(cr.width * sc), int(cr.height * sc)), Image.LANCZOS)
     cr.save(out, quality=90)
+    trim_dir(CACHE, CROP_CACHE_MAX)
     return out
 
 MIME = {'.html': 'text/html; charset=utf-8', '.woff2': 'font/woff2',
@@ -333,6 +387,12 @@ class H(BaseHTTPRequestHandler):
             g = lambda k, d=None: q.get(k, [d])[0]
             if u.path in ('/', '/index.html'):
                 return self._file(os.path.join(SITE, 'index.html'))
+            if u.path == '/healthz':
+                con().execute('SELECT 1')
+                return self._send(200, 'text/plain', b'ok')
+            if u.path == '/robots.txt':
+                return self._send(200, 'text/plain; charset=utf-8',
+                                  b'User-agent: *\nAllow: /\nDisallow: /api/\n', cache=86400)
             if u.path == '/api/search':
                 res = search(g('q', ''), g('paper') or None, int(g('limit', '400')))
                 return self._send(200, 'application/json; charset=utf-8',
@@ -348,7 +408,15 @@ class H(BaseHTTPRequestHandler):
                 return self._send(404, 'text/plain', b'not found')
             if u.path == '/api/page':
                 img = con().execute('SELECT img FROM pages WHERE key=?', [g('key', '')]).fetchone()
-                if img: return self._file(os.path.join(BASE, img[0]), cache=604800)
+                if img and IMG_BASE:
+                    from urllib.parse import quote
+                    self.send_response(302)
+                    self.send_header('Location', IMG_BASE + '/' + quote(img[0]))
+                    self.send_header('Cache-Control', 'max-age=604800')
+                    self.end_headers(); return
+                if img:
+                    p = page_image_path(img[0])
+                    if p: return self._file(p, cache=604800)
                 return self._send(404, 'text/plain', b'not found')
             if u.path.startswith('/%D8%AE%D8%B7%D9%88%D8%B7/') or u.path.startswith('/خطوط/'):
                 from urllib.parse import unquote
@@ -358,11 +426,13 @@ class H(BaseHTTPRequestHandler):
             return self._send(404, 'text/plain', b'404')
         except BrokenPipeError:
             pass
-        except Exception as e:
-            try: self._send(500, 'text/plain; charset=utf-8', str(e).encode())
+        except Exception:
+            # لا تفاصيل داخلية للزائر — التفاصيل إلى سجل الخادم
+            import traceback; traceback.print_exc()
+            try: self._send(500, 'text/plain; charset=utf-8', 'خطأ داخلي'.encode())
             except Exception: pass
 
 if __name__ == '__main__':
-    srv = ThreadingHTTPServer(('127.0.0.1', 8017), H)
-    print('http://127.0.0.1:8017')
+    srv = ThreadingHTTPServer((BIND, PORT), H)
+    print(f'http://{BIND}:{PORT}' + (f' | صور: {IMG_BASE}' if IMG_BASE else ''))
     srv.serve_forever()
